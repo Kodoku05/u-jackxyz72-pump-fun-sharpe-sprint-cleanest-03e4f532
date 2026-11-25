@@ -12,7 +12,19 @@ Authoritative development replay: **−0.114960576 SOL** net PnL, **208 fills**
 over **104 coins**, **104 qualifying round trips**, **5.5397047% maximum
 drawdown**. Trading guardrails pass; the development run is not prize eligible
 because net PnL is negative. Both executions reproduce byte for byte.
-The top three coins supplied 87% of gains; without them net PnL was −0.59 SOL.
+Hourly Sharpe was **−0.059701505**. The top three coins supplied **87.212581%**
+of gains; without them net PnL was **−0.589629306 SOL**.
+
+The 20-copy stress test completed without failures: median **−0.301557414 SOL**,
+p10 **−0.823546589 SOL**, p90 **+0.047820927 SOL**. **16/20 copies lost money**;
+the dev score exceeded 13/20 copies (65%). These results do not establish a
+profitable edge, and differ from the research brief's reported development PnL.
+The prescribed parameters were preserved.
+
+Local verification used the process driver on Node v24.22.1. The kit reports
+server Node v26.13.1, so its result hash can differ. Kit non-transcript checks
+pass; transcript checks are pending-parent-bundle. Bundling and submission
+are handled by the parent session.
 
 ## Run it
 
