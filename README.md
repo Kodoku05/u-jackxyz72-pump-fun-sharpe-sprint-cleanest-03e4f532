@@ -8,18 +8,17 @@ small stakes, an hourly loss gate, flattening before hour boundaries, and
 paced guardrail probes. Top-3 places depend on hourly Sharpe among guardrail
 passers; a prize requires positive net PnL after fees.
 
-Authoritative development replay: **−0.114960576 SOL** net PnL, **208 fills**
-over **104 coins**, **104 qualifying round trips**, **5.5397047% maximum
-drawdown**. Trading guardrails pass; the development run is not prize eligible
-because net PnL is negative. Both executions reproduce byte for byte.
-Hourly Sharpe was **−0.059701505**. The top three coins supplied **87.212581%**
-of gains; without them net PnL was **−0.589629306 SOL**.
+Authoritative **24-hour** development replay (the final window is **6 hours**):
+**+0.734835799 SOL** net PnL, **106 fills** over **51 coins**, **54 round trips**,
+and **3.4248205% maximum drawdown**. Trading guardrails pass. Both executions
+reproduce byte for byte. Hourly Sharpe was **0.252036248**. The top three coins
+supplied **56.495653%** of gains; without them net PnL was **−0.212113395 SOL**.
 
-The 20-copy stress test completed without failures: median **−0.301557414 SOL**,
-p10 **−0.823546589 SOL**, p90 **+0.047820927 SOL**. **16/20 copies lost money**;
-the dev score exceeded 13/20 copies (65%). These results do not establish a
-profitable edge, and differ from the research brief's reported development PnL.
-The prescribed parameters were preserved.
+The 20-copy stress test completed without failures: median **−0.35 SOL**,
+p10 **−0.64 SOL**, p90 **−0.06 SOL**. **18/20 copies lost money**; the dev
+score exceeded all 20 copies. The rebuilt copies show the dev score leans on
+this window's own coins; they are a spread, not a forecast of the final
+window.
 
 Local verification used the process driver on Node v24.22.1. The kit reports
 server Node v26.13.1, so its result hash can differ. Kit non-transcript checks

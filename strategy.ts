@@ -16,7 +16,7 @@ type Entry = { openedSlot: number; cost: number; probe: boolean };
 class GraduationStrategy {
   tapes = new Map<string, Tape>();
   held = new Map<string, Entry>();
-  entered = new Set<string>();
+  coreEntered = new Set<string>();
   guardrailCoins = new Set<string>();
   coreEntries = 0;
   t0: number | null = null;
@@ -40,7 +40,6 @@ class GraduationStrategy {
         tape.lastPrice = tape.createPrice;
         tape.peakPrice = Math.max(tape.peakPrice, tape.createPrice);
       } else if (e.event === 'TradeEvent') {
-        tape.creator = e.creator;
         const price = Number(e.virtual_quote_reserves) / Number(e.virtual_token_reserves);
         tape.lastPrice = price;
         tape.peakPrice = Math.max(tape.peakPrice, price);
@@ -121,7 +120,7 @@ class GraduationStrategy {
     let exposure = 0;
     for (const entry of this.held.values()) exposure += entry.cost;
     const buy = (mint: string, stake: bigint, minimum: bigint, probe: boolean): boolean => {
-      if (newEntries >= 2 || orders.length >= orderCap || this.entered.has(mint)
+      if ((!probe && newEntries >= 2) || orders.length >= orderCap || (!probe && this.coreEntered.has(mint))
         || this.held.has(mint) || state.positions.has(mint)
         || state.committedPositionCount() + newEntries >= state.hello.caps.max_open_positions) return false;
       const cap = state.maxBuyLamports(mint);
@@ -130,10 +129,10 @@ class GraduationStrategy {
       orders.push({ side: 'buy', mint, quote_lamports: amount, max_slippage_bps: 800 });
       const cost = Number(amount + tx) / SOL;
       this.held.set(mint, { openedSlot: batch.slot, cost, probe });
-      this.entered.add(mint);
+      if (!probe) this.coreEntered.add(mint);
       exposure += cost;
       freeCash -= amount + tx;
-      newEntries++;
+      if (!probe) newEntries++;
       return true;
     };
     const considered = new Set<string>();
@@ -142,21 +141,21 @@ class GraduationStrategy {
       if (considered.has(mint)) continue;
       considered.add(mint);
       const tape = this.tapes.get(mint)!;
-      if (state.curves.get(mint)?.complete || this.entered.has(mint)) continue;
+      if (state.curves.get(mint)?.complete || this.coreEntered.has(mint)) continue;
       const window = tape.trades.filter(t => t.slot > batch.slot - 60);
       const flow = window.reduce((sum, t) => sum + (t.isBuy ? t.solAmount : -t.solAmount), 0);
-      const core = batch.slot - tape.createSlot >= 50 && tape.realSol >= 45 && flow >= 3;
-      const fallback = hour >= 2 && this.coreEntries < 3 && tape.realSol >= 35 && flow >= 3
+      const core = window.length >= 3 && batch.slot - tape.createSlot >= 50 && tape.realSol >= 45 && flow >= 3;
+      const fallback = window.length >= 3 && hour >= 2 && this.coreEntries < 3 && tape.realSol >= 35 && flow >= 3
         && window.length > 0 && tape.lastPrice / window[0].price - 1 >= 0.2;
       if (core && buy(mint, 300000000n, 12000000n, false)) this.coreEntries++;
       else if (!core && fallback) buy(mint, 100000000n, 12000000n, false);
     }
-    const paceTarget = Math.ceil(26 * (hour + 1) / 6);
-    if (this.guardrailCoins.size < paceTarget) {
+    const paceTarget = Math.min(26, Math.ceil(26 * (hour + 1) / 6));
+    if (this.guardrailCoins.size < 26 && this.guardrailCoins.size < paceTarget) {
       let bestMint: string | null = null;
       let bestScore = -Infinity;
       for (const [mint, tape] of this.tapes) {
-        if (this.held.has(mint) || this.entered.has(mint) || this.guardrailCoins.has(mint)
+        if (this.held.has(mint) || this.guardrailCoins.has(mint)
           || state.positions.has(mint) || state.curves.get(mint)?.complete || tape.realSol < 3) continue;
         const score = tape.realSol + tape.trades.slice(-10)
           .reduce((sum, t) => sum + (t.isBuy ? t.solAmount : -t.solAmount), 0);
